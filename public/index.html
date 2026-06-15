@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GrocSto - Your Local Store Digitized</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="store-info">
+      <span class="material-symbols-outlined store-icon">storefront</span>
+      <div>
+        <h1 id="store-name">Scanning QR Code...</h1>
+        <p id="store-location"><span class="material-symbols-outlined">location_on</span> detecting store...</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div id="welcome-banner" class="welcome-banner hidden">
+      <h3>🎉 QR Scan Successful!</h3>
+      <p>You are browsing true local prices. No middleman markup.</p>
+    </div>
+    <section class="products-section">
+      <h2>Fresh Stock Available</h2>
+      <div id="products-grid" class="products-grid">
+        <div class="loading-shimmer">Loading fresh inventory...</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="cart-bar" class="cart-bar hidden">
+    <div class="cart-summary">
+      <span class="material-symbols-outlined">shopping_bag</span>
+      <div>
+        <span id="cart-count">0 Items</span>
+        <span id="cart-total">₹0.00</span>
+      </div>
+    </div>
+    <button id="checkout-btn" class="checkout-trigger-btn">
+      Place Order <span class="material-symbols-outlined">arrow_forward</span>
+    </button>
+  </div>
+
+  <div id="checkout-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Confirm Delivery Details</h2>
+        <button id="close-modal" class="close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="order-form" class="order-form">
+        <div class="form-group">
+          <label for="cust-name">Your Full Name</label>
+          <input type="text" id="cust-name" placeholder="Enter your name" required>
+        </div>
+        <div class="form-group">
+          <label for="cust-phone">Phone Number (For Updates)</label>
+          <input type="tel" id="cust-phone" placeholder="Enter 10-digit mobile number" pattern="[0-9]{10}" required>
+        </div>
+        <div class="form-group">
+          <label for="cust-address">Delivery Address (Hostel Room / Home)</label>
+          <textarea id="cust-address" rows="3" placeholder="e.g., Hostel 4, Room 202, SGSITS Campus" required></textarea>
+        </div>
+        <div class="order-summary-box">
+          <div class="summary-row">
+            <span>Items Total</span>
+            <span id="modal-subtotal">₹0.00</span>
+          </div>
+          <div class="summary-row">
+            <span>Delivery Fee</span>
+            <span class="free-badge">FREE</span>
+          </div>
+          <hr>
+          <div class="summary-row total">
+            <span>Grand Total</span>
+            <span id="modal-total">₹0.00</span>
+          </div>
+        </div>
+
+        <!-- Payment Method Selector -->
+        <div class="payment-method-selector">
+          <p class="payment-label">Choose Payment Method</p>
+          <div class="payment-options">
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="online" checked />
+              <div class="payment-option-card">
+                <span class="material-symbols-outlined">payments</span>
+                <div>
+                  <strong>Pay Online</strong>
+                  <small>UPI, Cards, Netbanking</small>
+                </div>
+              </div>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="cod" />
+              <div class="payment-option-card">
+                <span class="material-symbols-outlined">currency_rupee</span>
+                <div>
+                  <strong>Cash on Delivery</strong>
+                  <small>Pay when you receive</small>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" id="submit-order-btn" class="submit-order-btn">Confirm & Pay</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

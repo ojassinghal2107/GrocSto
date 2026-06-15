@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GrocSto Merchant Dashboard</title>
+  <link rel="stylesheet" href="merchant.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <span class="material-symbols-outlined login-icon">storefront</span>
+      <h1>GrocSto</h1>
+      <p>Merchant Dashboard</p>
+      <div class="form-group">
+        <label>Store Slug</label>
+        <input type="text" id="login-slug" placeholder="e.g. sharma-kirana" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter your store password" />
+      </div>
+      <button id="login-btn" class="primary-btn">Login</button>
+      <p id="login-error" class="error-msg hidden">Invalid slug or password.</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (hidden until login) -->
+  <div id="dashboard" class="hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="material-symbols-outlined">storefront</span>
+        <span>GrocSto</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-tab="orders">
+          <span class="material-symbols-outlined">receipt_long</span> Orders
+        </a>
+        <a class="nav-item" data-tab="inventory">
+          <span class="material-symbols-outlined">inventory_2</span> Inventory
+        </a>
+        <a class="nav-item" data-tab="qr">
+          <span class="material-symbols-outlined">qr_code_2</span> My QR Code
+        </a>
+      </nav>
+      <div class="sidebar-store-info">
+        <div id="dash-store-name" class="sidebar-store-name">—</div>
+        <div id="dash-store-location" class="sidebar-store-location">—</div>
+        <button id="logout-btn" class="logout-btn">
+          <span class="material-symbols-outlined">logout</span> Switch Store
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dash-main">
+
+      <!-- ORDERS TAB -->
+      <section id="tab-orders" class="tab-content active">
+        <div class="tab-header">
+          <h2>Incoming Orders</h2>
+          <button id="refresh-orders-btn" class="icon-btn">
+            <span class="material-symbols-outlined">refresh</span> Refresh
+          </button>
+        </div>
+        <div id="orders-list" class="orders-list">
+          <div class="empty-state">Loading orders...</div>
+        </div>
+      </section>
+
+      <!-- INVENTORY TAB -->
+      <section id="tab-inventory" class="tab-content hidden">
+        <div class="tab-header">
+          <h2>Inventory</h2>
+          <button id="show-add-product-btn" class="primary-btn small">
+            <span class="material-symbols-outlined">add</span> Add Product
+          </button>
+        </div>
+
+        <!-- Add Product Form -->
+        <div id="add-product-form" class="form-card hidden">
+          <h3>Add New Product</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" id="prod-name" placeholder="e.g. Basmati Rice 1kg" />
+            </div>
+            <div class="form-group">
+              <label>Price (₹) *</label>
+              <input type="number" id="prod-price" placeholder="e.g. 85" step="0.01" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Stock Quantity</label>
+              <input type="number" id="prod-stock" placeholder="e.g. 50" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" id="prod-desc" placeholder="Optional short description" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="cancel-add-product" class="ghost-btn">Cancel</button>
+            <button id="submit-add-product" class="primary-btn">Add to Inventory</button>
+          </div>
+        </div>
+
+        <div id="inventory-list" class="inventory-list">
+          <div class="empty-state">Loading inventory...</div>
+        </div>
+      </section>
+
+      <!-- QR TAB -->
+      <section id="tab-qr" class="tab-content hidden">
+        <div class="tab-header">
+          <h2>My Store QR Code</h2>
+        </div>
+        <div class="qr-card">
+          <p class="qr-desc">Print this QR code and place it at your counter. Customers scan it to browse your store and place orders directly.</p>
+          <div id="qr-image-wrapper" class="qr-image-wrapper">
+            <div class="empty-state">Generating QR...</div>
+          </div>
+          <div id="qr-url" class="qr-url"></div>
+          <button id="download-qr-btn" class="primary-btn" style="margin-top:16px">
+            <span class="material-symbols-outlined">download</span> Download QR
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div id="edit-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-center">
+      <div class="modal-header">
+        <h2>Edit Product</h2>
+        <button id="close-edit-modal" class="close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <input type="hidden" id="edit-product-id" />
+      <div class="form-group">
+        <label>Price (₹)</label>
+        <input type="number" id="edit-price" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Stock Quantity</label>
+        <input type="number" id="edit-stock" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="edit-desc" />
+      </div>
+      <button id="submit-edit-product" class="primary-btn" style="width:100%">Save Changes</button>
+    </div>
+  </div>
+
+  <script src="merchant.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+const { PrismaClient } = require('@prisma/client');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const prisma = new PrismaClient();
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+// ── HELPER: find-or-create user + register to store ──────────────────────────
+async function resolveUser(phone, customerName, storeId) {
+  const user = await prisma.user.upsert({
+    where: { phone },
+    update: { name: customerName },
+    create: { phone, name: customerName }
+  });
+
+  await prisma.storeCustomer.upsert({
+    where: { storeId_userId: { storeId: parseInt(storeId), userId: user.id } },
+    update: {},
+    create: { storeId: parseInt(storeId), userId: user.id }
+  });
+
+  return user;
+}
+
+// ── 1. CREATE RAZORPAY ORDER (called before showing payment popup) ────────────
+exports.createRazorpayOrder = async (req, res) => {
+  const { totalAmount } = req.body;
+
+  if (!totalAmount || totalAmount <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid amount." });
+  }
+
+  try {
+    const options = {
+      amount: Math.round(parseFloat(totalAmount) * 100), // Razorpay expects paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    return res.json({
+      success: true,
+      razorpayOrderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID
+    });
+  } catch (error) {
+    console.error("Error creating Razorpay order:", error);
+    return res.status(500).json({ success: false, message: "Could not initiate payment." });
+  }
+};
+
+// ── 2. VERIFY PAYMENT + SAVE ORDER (called after Razorpay popup success) ─────
+exports.verifyAndPlaceOrder = async (req, res) => {
+  const {
+    phone, customerName, storeId, totalAmount, deliveryAddress,
+    razorpayOrderId, razorpayPaymentId, razorpaySignature
+  } = req.body;
+
+  if (!phone || !storeId || !totalAmount || !deliveryAddress ||
+      !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    return res.status(400).json({ success: false, message: "Missing payment verification fields." });
+  }
+
+  // Verify signature — this is the security check
+  const expectedSignature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest('hex');
+
+  if (expectedSignature !== razorpaySignature) {
+    return res.status(400).json({ success: false, message: "Payment verification failed. Signature mismatch." });
+  }
+
+  try {
+    const user = await resolveUser(phone, customerName, storeId);
+
+    const newOrder = await prisma.order.create({
+      data: {
+        storeId: parseInt(storeId),
+        userId: user.id,
+        totalAmount: parseFloat(totalAmount),
+        deliveryAddress,
+        status: 'PENDING',
+        paymentMethod: 'ONLINE',
+        paymentStatus: 'PAID',
+        razorpayOrderId,
+        razorpayPaymentId
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Payment verified! Order placed successfully.",
+      orderId: newOrder.id,
+      status: newOrder.status,
+      paymentStatus: newOrder.paymentStatus
+    });
+  } catch (error) {
+    console.error("Error placing online order:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ── 3. PLACE COD ORDER ────────────────────────────────────────────────────────
+exports.placeCODOrder = async (req, res) => {
+  const { phone, customerName, storeId, totalAmount, deliveryAddress } = req.body;
+
+  if (!phone || !storeId || !totalAmount || !deliveryAddress) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields (phone, storeId, totalAmount, deliveryAddress)."
+    });
+  }
+
+  try {
+    const user = await resolveUser(phone, customerName, storeId);
+
+    const newOrder = await prisma.order.create({
+      data: {
+        storeId: parseInt(storeId),
+        userId: user.id,
+        totalAmount: parseFloat(totalAmount),
+        deliveryAddress,
+        status: 'PENDING',
+        paymentMethod: 'COD',
+        paymentStatus: 'PENDING'
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Order placed! Pay cash on delivery.",
+      orderId: newOrder.id,
+      status: newOrder.status,
+      paymentStatus: newOrder.paymentStatus
+    });
+  } catch (error) {
+    console.error("Error placing COD order:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ── 4. GET ALL ORDERS FOR A STORE (merchant dashboard) ───────────────────────
+exports.getStoreOrders = async (req, res) => {
+  const { storeId } = req.params;
+
+  try {
+    const orders = await prisma.order.findMany({
+      where: { storeId: parseInt(storeId) },
+      include: {
+        user: { select: { name: true, phone: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return res.json({ success: true, count: orders.length, orders });
+  } catch (error) {
+    console.error("Error fetching shop orders:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ── 5. UPDATE ORDER STATUS ────────────────────────────────────────────────────
+exports.updateOrderStatus = async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  const validStatuses = ['PENDING', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, message: "Invalid order status." });
+  }
+
+  try {
+    const updatedOrder = await prisma.order.update({
+      where: { id: parseInt(orderId) },
+      data: { status }
+    });
+
+    return res.json({
+      success: true,
+      message: `Order status updated to ${status}.`,
+      order: updatedOrder
+    });
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

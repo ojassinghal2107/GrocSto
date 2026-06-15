@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. The Store Table (Every shop you add or sell to goes here)
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique // e.g., "sharma-kirana" used directly in your QR code URL
+  address   String
+  city      String
+  password  String?  // bcrypt hashed password for merchant login (optional during migration)
+  createdAt DateTime @default(now())
+
+  // Relations
+  products  Product[]
+  customers StoreCustomer[]
+  orders    Order[]
+}
+
+// 2. The User Table (Global database of customers)
+model User {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique // Essential for fast, single-tap mobile logins
+  name      String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  stores    StoreCustomer[]
+  orders    Order[]
+}
+
+// 3. The Junction Table (Registers a user to a specific shop when they scan its QR)
+model StoreCustomer {
+  id        Int      @id @default(autoincrement())
+  storeId   Int
+  userId    Int
+  scannedAt DateTime @default(now())
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, userId]) // Ensures a user is registered to a shop only once
+}
+
+// 4. The Products Table (Scoped tightly to its specific parent store)
+model Product {
+  id          Int      @id @default(autoincrement())
+  storeId     Int
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2) // Handles exact currency math perfectly
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// 5. The Orders Table
+model Order {
+  id                Int           @id @default(autoincrement())
+  storeId           Int
+  userId            Int
+  totalAmount       Decimal       @db.Decimal(10, 2)
+  status            OrderStatus   @default(PENDING)
+  deliveryAddress   String
+  paymentMethod     PaymentMethod @default(COD)
+  paymentStatus     PaymentStatus @default(PENDING)
+  razorpayOrderId   String?       // Razorpay order id (rzp_order_xxx)
+  razorpayPaymentId String?       // Razorpay payment id after success
+  createdAt         DateTime      @default(now())
+
+  store             Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
