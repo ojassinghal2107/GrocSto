@@ -185,6 +185,10 @@ function setupEventListeners() {
 
   document.getElementById("close-modal").addEventListener("click", () => {
     modal.classList.add("hidden");
+    // Reset back to form step
+    document.getElementById("order-form").classList.remove("hidden");
+    document.getElementById("order-review").classList.add("hidden");
+    document.querySelector(".modal-header h2").textContent = "Confirm Delivery Details";
   });
 
   // ── MY ORDERS MODAL ──────────────────────────────────────────────────────
@@ -229,12 +233,62 @@ function setupEventListeners() {
   document.getElementById("order-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const method = document.querySelector('input[name="payment-method"]:checked').value;
+    showOrderReview(method);
+  });
+
+  // Review screen — back button
+  document.getElementById("review-back-btn").addEventListener("click", () => {
+    document.getElementById("order-review").classList.add("hidden");
+    document.getElementById("order-form").classList.remove("hidden");
+    document.querySelector(".modal-header h2").textContent = "Confirm Delivery Details";
+  });
+
+  // Review screen — confirm button actually places the order
+  document.getElementById("review-confirm-btn").addEventListener("click", () => {
+    const method = document.querySelector('input[name="payment-method"]:checked').value;
     if (method === "online") handleOnlinePayment();
     else handleCODOrder();
   });
 }
 
-// ── 5. ONLINE PAYMENT via Razorpay ────────────────────────────────────────────
+// ── 5. ORDER REVIEW SCREEN ────────────────────────────────────────────────────
+function showOrderReview(method) {
+  // Populate items
+  const itemsEl = document.getElementById("review-items");
+  itemsEl.innerHTML = "";
+  let total = 0;
+  for (let id in cart) {
+    const item = cart[id];
+    const lineTotal = item.quantity * item.price;
+    total += lineTotal;
+    const row = document.createElement("div");
+    row.className = "review-item-row";
+    row.innerHTML = `
+      <span class="review-item-name">${item.name} <span class="review-item-qty">× ${item.quantity}</span></span>
+      <span class="review-item-price">₹${lineTotal.toFixed(2)}</span>`;
+    itemsEl.appendChild(row);
+  }
+
+  // Populate delivery details
+  document.getElementById("review-name").textContent    = document.getElementById("cust-name").value;
+  document.getElementById("review-phone").textContent   = document.getElementById("cust-phone").value;
+  document.getElementById("review-address").textContent = document.getElementById("cust-address").value;
+  document.getElementById("review-total").textContent   = `₹${total.toFixed(2)}`;
+
+  const tag = document.getElementById("review-payment-tag");
+  tag.textContent = method === "cod" ? "💵 Cash on Delivery" : "💳 Online Payment";
+  tag.className = `review-payment-tag ${method}`;
+
+  const confirmLabel = document.getElementById("review-confirm-label");
+  confirmLabel.textContent = method === "cod" ? "Confirm & Place Order" : "Confirm & Pay";
+
+  // Switch view
+  document.getElementById("order-form").classList.add("hidden");
+  document.getElementById("order-review").classList.remove("hidden");
+  document.querySelector(".modal-header h2").textContent = "Review Your Order";
+}
+
+// ── 6. ONLINE PAYMENT via Razorpay ────────────────────────────────────────────
 function handleOnlinePayment() {
   let totalPrice = 0;
   for (let id in cart) totalPrice += cart[id].quantity * cart[id].price;

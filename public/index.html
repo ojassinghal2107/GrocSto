@@ -98,6 +98,8 @@
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
+
+      <!-- STEP 1: Details form -->
       <form id="order-form" class="order-form">
         <div class="form-group">
           <label for="cust-name">Your Full Name</label>
@@ -154,8 +156,48 @@
           </div>
         </div>
 
-        <button type="submit" id="submit-order-btn" class="submit-order-btn">Confirm & Pay</button>
+        <button type="submit" id="submit-order-btn" class="submit-order-btn">Review Order →</button>
       </form>
+
+      <!-- STEP 2: Confirmation screen (hidden until form submitted) -->
+      <div id="order-review" class="order-review hidden">
+        <div class="review-section">
+          <h3 class="review-heading">📦 Your Items</h3>
+          <div id="review-items" class="review-items"></div>
+        </div>
+        <div class="review-section">
+          <h3 class="review-heading">🚚 Delivering to</h3>
+          <div class="review-detail-row">
+            <span class="material-symbols-outlined">person</span>
+            <span id="review-name"></span>
+          </div>
+          <div class="review-detail-row">
+            <span class="material-symbols-outlined">phone</span>
+            <span id="review-phone"></span>
+          </div>
+          <div class="review-detail-row">
+            <span class="material-symbols-outlined">location_on</span>
+            <span id="review-address"></span>
+          </div>
+        </div>
+        <div class="review-section">
+          <div class="review-total-row">
+            <span>Grand Total</span>
+            <span id="review-total" class="review-total-amount"></span>
+          </div>
+          <div class="review-payment-tag" id="review-payment-tag"></div>
+        </div>
+        <div class="review-actions">
+          <button id="review-back-btn" class="ghost-btn review-back-btn">
+            <span class="material-symbols-outlined">arrow_back</span> Edit
+          </button>
+          <button id="review-confirm-btn" class="submit-order-btn review-confirm-btn">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span id="review-confirm-label">Place Order</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
