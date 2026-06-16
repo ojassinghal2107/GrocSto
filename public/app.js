@@ -438,3 +438,61 @@ function formatOrderStatus(s) {
     CANCELLED: '❌ Cancelled'
   }[s] || s;
 }
+
+// ── PWA: SERVICE WORKER + INSTALL BANNER ─────────────────────────────────────
+let deferredInstallPrompt = null;
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
+// Capture the browser's install prompt before it fires
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+
+  // Only show banner if user hasn't dismissed it before
+  if (!localStorage.getItem('pwa-dismissed')) {
+    setTimeout(() => showInstallBanner(), 3000); // show after 3s so page loads first
+  }
+});
+
+function showInstallBanner() {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const installBtn  = document.getElementById('pwa-install-btn');
+  const dismissBtn  = document.getElementById('pwa-dismiss-btn');
+
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      document.getElementById('pwa-banner').classList.add('hidden');
+      if (outcome === 'accepted') localStorage.setItem('pwa-dismissed', '1');
+    });
+  }
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      document.getElementById('pwa-banner').classList.add('hidden');
+      localStorage.setItem('pwa-dismissed', '1');
+    });
+  }
+});
+
+// Hide banner if app is already installed
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.classList.add('hidden');
+  deferredInstallPrompt = null;
+});

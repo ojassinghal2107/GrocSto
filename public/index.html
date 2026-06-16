@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GrocSto - Your Local Store Digitized</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="GrocSto">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
@@ -149,6 +156,25 @@
 
         <button type="submit" id="submit-order-btn" class="submit-order-btn">Confirm & Pay</button>
       </form>
+    </div>
+  </div>
+
+  <!-- PWA INSTALL BANNER -->
+  <div id="pwa-banner" class="pwa-banner hidden">
+    <div class="pwa-banner-content">
+      <div class="pwa-banner-icon">
+        <img src="/icons/icon-192.svg" alt="GrocSto" />
+      </div>
+      <div class="pwa-banner-text">
+        <strong>Add GrocSto to Home Screen</strong>
+        <span>Get quick access to this store</span>
+      </div>
+    </div>
+    <div class="pwa-banner-actions">
+      <button id="pwa-install-btn" class="pwa-install-btn">Add</button>
+      <button id="pwa-dismiss-btn" class="pwa-dismiss-btn">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
   </div>
 

@@ -672,3 +672,56 @@ body {
   align-items: center; justify-content: center; color: #cbd5e1;
 }
 .product-img-placeholder .material-symbols-outlined { font-size: 40px; }
+
+/* ── PWA INSTALL BANNER ── */
+.pwa-banner {
+  position: fixed;
+  bottom: 80px; /* sits above cart bar */
+  left: 12px;
+  right: 12px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 999;
+  animation: slideUp 0.3s ease;
+}
+.pwa-banner.hidden { display: none; }
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.pwa-banner-content { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+
+.pwa-banner-icon img {
+  width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+}
+
+.pwa-banner-text {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.pwa-banner-text strong { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pwa-banner-text span   { font-size: 12px; color: #94a3b8; }
+
+.pwa-banner-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.pwa-install-btn {
+  background: #10b981; color: #fff; border: none;
+  padding: 8px 18px; border-radius: 8px; font-weight: 600;
+  font-size: 14px; cursor: pointer; white-space: nowrap;
+}
+.pwa-install-btn:hover { background: #059669; }
+
+.pwa-dismiss-btn {
+  background: transparent; border: none; color: #64748b;
+  cursor: pointer; padding: 4px; display: flex; align-items: center;
+}
+.pwa-dismiss-btn:hover { color: #fff; }
+.pwa-dismiss-btn .material-symbols-outlined { font-size: 20px; }
