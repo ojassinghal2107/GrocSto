@@ -442,6 +442,9 @@ function formatOrderStatus(s) {
 // ── PWA: SERVICE WORKER + INSTALL BANNER ─────────────────────────────────────
 let deferredInstallPrompt = null;
 
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -451,14 +454,12 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Capture the browser's install prompt before it fires
+// Capture the browser's install prompt before it fires (Android Chrome)
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-
-  // Only show banner if user hasn't dismissed it before
   if (!localStorage.getItem('pwa-dismissed')) {
-    setTimeout(() => showInstallBanner(), 3000); // show after 3s so page loads first
+    setTimeout(() => showInstallBanner(), 3000);
   }
 });
 
@@ -467,9 +468,28 @@ function showInstallBanner() {
   if (banner) banner.classList.remove('hidden');
 }
 
+// Show iOS instructions banner if on iOS Safari, not already installed, not dismissed
+function checkIOSBanner() {
+  if (isIOS && !isInStandaloneMode && !localStorage.getItem('ios-banner-dismissed')) {
+    const isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+    const banner = document.getElementById('ios-banner');
+    if (!banner) return;
+    if (isSafari) {
+      // Full Safari — show "how to install" instructions after 3s
+      setTimeout(() => banner.classList.remove('hidden'), 3000);
+    } else {
+      // In-app browser (Google app, Chrome in-app) — tell them to open in Safari
+      banner.querySelector('p').innerHTML =
+        'Tap <strong>⋯</strong> or <strong>Share</strong> → <strong>"Open in Safari"</strong>, then use Safari\'s Share button → <strong>"Add to Home Screen"</strong>';
+      setTimeout(() => banner.classList.remove('hidden'), 3000);
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const installBtn  = document.getElementById('pwa-install-btn');
   const dismissBtn  = document.getElementById('pwa-dismiss-btn');
+  const iosDismiss  = document.getElementById('ios-dismiss-btn');
 
   if (installBtn) {
     installBtn.addEventListener('click', async () => {
@@ -488,6 +508,15 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('pwa-dismissed', '1');
     });
   }
+
+  if (iosDismiss) {
+    iosDismiss.addEventListener('click', () => {
+      document.getElementById('ios-banner').classList.add('hidden');
+      localStorage.setItem('ios-banner-dismissed', '1');
+    });
+  }
+
+  checkIOSBanner();
 });
 
 // Hide banner if app is already installed

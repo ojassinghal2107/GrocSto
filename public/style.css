@@ -725,3 +725,44 @@ body {
 }
 .pwa-dismiss-btn:hover { color: #fff; }
 .pwa-dismiss-btn .material-symbols-outlined { font-size: 20px; }
+
+/* ── iOS INSTALL BANNER ── */
+.ios-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px 32px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+  z-index: 999;
+  animation: slideUp 0.3s ease;
+}
+.ios-banner.hidden { display: none; }
+
+.ios-dismiss-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: #f1f5f9; border: none; border-radius: 50%;
+  width: 28px; height: 28px; display: flex;
+  align-items: center; justify-content: center;
+  cursor: pointer; color: #64748b;
+}
+.ios-dismiss-btn .material-symbols-outlined { font-size: 16px; }
+
+.ios-banner-body {
+  display: flex; gap: 14px; align-items: flex-start; margin-top: 4px;
+}
+.ios-banner-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  flex-shrink: 0; border: 1px solid #e2e8f0;
+}
+.ios-banner-text strong:first-child {
+  display: block; font-size: 15px; margin-bottom: 6px; color: #0f172a;
+}
+.ios-banner-text p {
+  font-size: 13px; color: #475569; line-height: 1.5; margin: 0;
+}
+.ios-share-icon {
+  font-size: 16px; vertical-align: middle;
+  font-family: -apple-system, sans-serif;
+}
