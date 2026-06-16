@@ -4,6 +4,13 @@ let currentStoreId = null;
 let currentStoreName = "";
 let cart = {}; // { productId: { name, price, quantity } }
 
+const DELIVERY_FEE = 30;
+const FREE_DELIVERY_THRESHOLD = 499;
+
+function getDeliveryFee(subtotal) {
+  return subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initializeStoreContext();
   setupEventListeners();
@@ -176,10 +183,22 @@ function setupEventListeners() {
   const modal = document.getElementById("checkout-modal");
 
   document.getElementById("checkout-btn").addEventListener("click", () => {
-    let totalPrice = 0;
-    for (let id in cart) totalPrice += cart[id].quantity * cart[id].price;
-    document.getElementById("modal-subtotal").innerText = `₹${totalPrice.toFixed(2)}`;
-    document.getElementById("modal-total").innerText = `₹${totalPrice.toFixed(2)}`;
+    let subtotal = 0;
+    for (let id in cart) subtotal += cart[id].quantity * cart[id].price;
+    const fee = getDeliveryFee(subtotal);
+    const total = subtotal + fee;
+
+    document.getElementById("modal-subtotal").innerText = `₹${subtotal.toFixed(2)}`;
+
+    const feeEl = document.getElementById("modal-delivery-fee");
+    if (fee === 0) {
+      feeEl.innerHTML = `<span class="free-badge">FREE</span>`;
+    } else {
+      feeEl.innerHTML = `<span>₹${fee.toFixed(2)}</span>
+        <small class="delivery-hint">Add ₹${(FREE_DELIVERY_THRESHOLD - subtotal).toFixed(0)} more for free delivery</small>`;
+    }
+
+    document.getElementById("modal-total").innerText = `₹${total.toFixed(2)}`;
     modal.classList.remove("hidden");
   });
 
@@ -256,11 +275,11 @@ function showOrderReview(method) {
   // Populate items
   const itemsEl = document.getElementById("review-items");
   itemsEl.innerHTML = "";
-  let total = 0;
+  let subtotal = 0;
   for (let id in cart) {
     const item = cart[id];
     const lineTotal = item.quantity * item.price;
-    total += lineTotal;
+    subtotal += lineTotal;
     const row = document.createElement("div");
     row.className = "review-item-row";
     row.innerHTML = `
@@ -269,7 +288,17 @@ function showOrderReview(method) {
     itemsEl.appendChild(row);
   }
 
-  // Populate delivery details
+  const fee = getDeliveryFee(subtotal);
+  const total = subtotal + fee;
+
+  // Add delivery fee row
+  const feeRow = document.createElement("div");
+  feeRow.className = "review-item-row";
+  feeRow.innerHTML = fee === 0
+    ? `<span class="review-item-name">Delivery</span><span class="review-item-price free-badge">FREE</span>`
+    : `<span class="review-item-name">Delivery</span><span class="review-item-price">₹${fee.toFixed(2)}</span>`;
+  itemsEl.appendChild(feeRow);
+
   document.getElementById("review-name").textContent    = document.getElementById("cust-name").value;
   document.getElementById("review-phone").textContent   = document.getElementById("cust-phone").value;
   document.getElementById("review-address").textContent = document.getElementById("cust-address").value;
@@ -290,8 +319,9 @@ function showOrderReview(method) {
 
 // ── 6. ONLINE PAYMENT via Razorpay ────────────────────────────────────────────
 function handleOnlinePayment() {
-  let totalPrice = 0;
-  for (let id in cart) totalPrice += cart[id].quantity * cart[id].price;
+  let subtotal = 0;
+  for (let id in cart) subtotal += cart[id].quantity * cart[id].price;
+  const totalPrice = subtotal + getDeliveryFee(subtotal);
 
   const btn = document.getElementById("submit-order-btn");
   btn.disabled = true;
@@ -377,8 +407,9 @@ function handleOnlinePayment() {
 
 // ── 6. CASH ON DELIVERY ───────────────────────────────────────────────────────
 function handleCODOrder() {
-  let totalPrice = 0;
-  for (let id in cart) totalPrice += cart[id].quantity * cart[id].price;
+  let subtotal = 0;
+  for (let id in cart) subtotal += cart[id].quantity * cart[id].price;
+  const totalPrice = subtotal + getDeliveryFee(subtotal);
 
   const btn = document.getElementById("submit-order-btn");
   btn.disabled = true;

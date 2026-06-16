@@ -820,3 +820,9 @@ body {
   font-size: 15px;
 }
 .review-confirm-btn .material-symbols-outlined { font-size: 20px; }
+
+/* ── DELIVERY FEE HINT ── */
+.delivery-hint {
+  display: block; font-size: 11px; color: #f59e0b;
+  font-weight: 500; margin-top: 2px;
+}
