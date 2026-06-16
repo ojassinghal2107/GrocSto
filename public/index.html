@@ -18,6 +18,10 @@
         <p id="store-location"><span class="material-symbols-outlined">location_on</span> detecting store...</p>
       </div>
     </div>
+    <button id="my-orders-btn" class="my-orders-header-btn hidden">
+      <span class="material-symbols-outlined">receipt_long</span>
+      My Orders
+    </button>
   </header>
 
   <main class="app-main">
@@ -26,12 +30,44 @@
       <p>You are browsing true local prices. No middleman markup.</p>
     </div>
     <section class="products-section">
-      <h2>Fresh Stock Available</h2>
+      <div class="products-header">
+        <h2>Fresh Stock Available</h2>
+        <div class="search-bar">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" id="product-search" placeholder="Search products..." autocomplete="off" />
+          <button id="clear-search" class="clear-search hidden">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+      <p id="search-empty" class="search-empty hidden">No products match your search.</p>
       <div id="products-grid" class="products-grid">
         <div class="loading-shimmer">Loading fresh inventory...</div>
       </div>
     </section>
   </main>
+
+  <!-- MY ORDERS MODAL -->
+  <div id="my-orders-modal" class="modal hidden">
+    <div class="modal-overlay" id="my-orders-overlay"></div>
+    <div class="modal-content my-orders-modal-content">
+      <div class="modal-header">
+        <h2>My Orders</h2>
+        <button id="close-my-orders" class="close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <!-- Phone lookup -->
+      <div id="orders-phone-prompt" class="orders-phone-prompt">
+        <p>Enter your phone number to view your orders</p>
+        <div class="orders-phone-row">
+          <input type="tel" id="orders-phone-input" placeholder="10-digit mobile number" maxlength="10" />
+          <button id="orders-phone-btn" class="primary-btn small">View</button>
+        </div>
+      </div>
+      <div id="my-orders-list"></div>
+    </div>
+  </div>
 
   <div id="cart-bar" class="cart-bar hidden">
     <div class="cart-summary">

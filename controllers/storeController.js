@@ -121,7 +121,7 @@ exports.getStoreQR = async (req, res) => {
       return res.status(404).json({ success: false, message: "Store not found." });
     }
 
-    const frontendUrl = `http://localhost:5000/?store=${store.slug}`;
+    const frontendUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`}/?store=${store.slug}`;
 
     const qrCodeImageUrl = await QRCode.toDataURL(frontendUrl, {
       errorCorrectionLevel: 'H',

@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "/api";
 
 let currentStore = null; // Full store object after login
 
@@ -67,6 +67,8 @@ function showDashboard() {
   loadOrders();
   loadInventory();
   loadQR();
+  lastOrderCount = 0;
+  startOrderPolling();
 }
 
 // ── 2. TAB NAVIGATION ─────────────────────────────────────────────────────────
@@ -89,6 +91,51 @@ function setupTabNav() {
 }
 
 // ── 3. ORDERS ─────────────────────────────────────────────────────────────────
+let lastOrderCount = 0;
+let orderPollInterval = null;
+let titleBlinkInterval = null;
+
+function startOrderPolling() {
+  // Poll every 20 seconds
+  orderPollInterval = setInterval(() => {
+    fetchOrdersSilently();
+  }, 20000);
+}
+
+function stopOrderPolling() {
+  if (orderPollInterval) { clearInterval(orderPollInterval); orderPollInterval = null; }
+}
+
+function fetchOrdersSilently() {
+  fetch(`${API_BASE}/orders/store/${currentStore.id}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) return;
+      const newCount = data.orders.filter(o => o.status === 'PENDING').length;
+      if (newCount > lastOrderCount) {
+        loadOrders();
+        startTitleBlink(newCount);
+      }
+      lastOrderCount = newCount;
+    })
+    .catch(() => {});
+}
+
+function startTitleBlink(count) {
+  if (titleBlinkInterval) return;
+  let show = true;
+  titleBlinkInterval = setInterval(() => {
+    document.title = show ? `🔔 ${count} New Order${count > 1 ? 's' : ''}!` : 'GrocSto Merchant';
+    show = !show;
+  }, 1000);
+  window.addEventListener('focus', stopTitleBlink, { once: true });
+}
+
+function stopTitleBlink() {
+  if (titleBlinkInterval) { clearInterval(titleBlinkInterval); titleBlinkInterval = null; }
+  document.title = 'GrocSto Merchant Dashboard';
+}
+
 function loadOrders() {
   const list = document.getElementById("orders-list");
   list.innerHTML = `<div class="empty-state">Loading orders...</div>`;
@@ -102,6 +149,7 @@ function loadOrders() {
       }
 
       list.innerHTML = "";
+      lastOrderCount = data.orders.filter(o => o.status === 'PENDING').length;
       data.orders.forEach(order => {
         const card = document.createElement("div");
         card.className = "order-card";
@@ -121,6 +169,17 @@ function loadOrders() {
             <span class="payment-badge payment-${order.paymentMethod?.toLowerCase()}">${order.paymentMethod || 'COD'}</span>
             &nbsp;
             <span class="payment-badge payment-status-${order.paymentStatus?.toLowerCase()}">${order.paymentStatus || 'PENDING'}</span>
+          </div>
+          <div class="order-items-breakdown">
+            ${order.items && order.items.length
+              ? order.items.map(i => `
+                  <div class="order-item-row">
+                    <span class="order-item-name">${i.name}</span>
+                    <span class="order-item-qty">× ${i.quantity}</span>
+                    <span class="order-item-price">₹${(parseFloat(i.price) * i.quantity).toFixed(2)}</span>
+                  </div>`).join('')
+              : '<span class="no-items">No item details recorded.</span>'
+            }
           </div>
           <div class="order-card-footer">
             <div class="order-amount">₹${parseFloat(order.totalAmount).toFixed(2)}</div>
@@ -185,7 +244,6 @@ function loadInventory() {
         list.innerHTML = `<div class="empty-state">No products yet. Add your first item above.</div>`;
         return;
       }
-
       list.innerHTML = "";
       data.products.forEach(p => renderInventoryItem(p, list));
     })
@@ -198,7 +256,11 @@ function renderInventoryItem(p, container) {
   const item = document.createElement("div");
   item.className = "inventory-item";
   item.id = `inv-item-${p.id}`;
+  const imgHtml = p.imageUrl
+    ? `<img src="${p.imageUrl}" class="inv-thumb" alt="${p.name}" />`
+    : `<div class="inv-thumb-placeholder"><span class="material-symbols-outlined">image_not_supported</span></div>`;
   item.innerHTML = `
+    ${imgHtml}
     <div class="item-info">
       <div class="item-name">${p.name}</div>
       <div class="item-desc">${p.description || '—'}</div>
@@ -207,13 +269,26 @@ function renderInventoryItem(p, container) {
       <div class="item-price">₹${parseFloat(p.price).toFixed(2)}</div>
       <div class="item-stock ${p.stock <= 5 ? 'low' : ''}">${p.stock} in stock</div>
     </div>
-    <button class="edit-btn" onclick="openEditModal(${p.id}, ${p.price}, ${p.stock}, '${(p.description || '').replace(/'/g, "\\'")}')">
+    <button class="edit-btn" onclick="openEditModal(${p.id}, ${p.price}, ${p.stock}, '${(p.description || '').replace(/'/g, "\\'")}', '${p.imageUrl || ''}')">
       <span class="material-symbols-outlined" style="font-size:16px">edit</span> Edit
     </button>`;
   container.appendChild(item);
 }
 
 function setupInventoryPanel() {
+  // Image upload area click-through
+  document.getElementById("add-image-area").addEventListener("click", () => {
+    document.getElementById("prod-image").click();
+  });
+  document.getElementById("prod-image").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById("add-image-preview");
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove("hidden");
+    document.getElementById("add-image-area").querySelector("span:last-child").textContent = file.name;
+  });
+
   document.getElementById("show-add-product-btn").addEventListener("click", () => {
     document.getElementById("add-product-form").classList.toggle("hidden");
   });
@@ -228,20 +303,28 @@ function setupInventoryPanel() {
     const price = document.getElementById("prod-price").value;
     const stock = document.getElementById("prod-stock").value;
     const desc  = document.getElementById("prod-desc").value.trim();
+    const imageFile = document.getElementById("prod-image").files[0];
 
     if (!name || !price) return alert("Name and Price are required.");
 
-    fetch(`${API_BASE}/products/add`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: currentStore.id, name, price, stock, description: desc })
-    })
+    const btn = document.getElementById("submit-add-product");
+    btn.disabled = true;
+    btn.textContent = imageFile ? "Uploading..." : "Adding...";
+
+    const formData = new FormData();
+    formData.append("storeId", currentStore.id);
+    formData.append("name", name);
+    formData.append("price", price);
+    formData.append("stock", stock);
+    formData.append("description", desc);
+    if (imageFile) formData.append("image", imageFile);
+
+    fetch(`${API_BASE}/products/add`, { method: "POST", body: formData })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           clearAddForm();
           document.getElementById("add-product-form").classList.add("hidden");
-          // Append new item to list without full reload
           const list = document.getElementById("inventory-list");
           if (list.querySelector(".empty-state")) list.innerHTML = "";
           renderInventoryItem(data.product, list);
@@ -249,7 +332,8 @@ function setupInventoryPanel() {
           alert(data.message);
         }
       })
-      .catch(() => alert("Failed to add product."));
+      .catch(() => alert("Failed to add product."))
+      .finally(() => { btn.disabled = false; btn.textContent = "Add to Inventory"; });
   });
 }
 
@@ -257,43 +341,81 @@ function clearAddForm() {
   ["prod-name", "prod-price", "prod-stock", "prod-desc"].forEach(id => {
     document.getElementById(id).value = "";
   });
+  document.getElementById("prod-image").value = "";
+  const preview = document.getElementById("add-image-preview");
+  preview.src = "";
+  preview.classList.add("hidden");
+  document.getElementById("add-image-area").querySelector("span:last-child").textContent = "Click to upload image";
 }
 
 // ── 5. EDIT MODAL ─────────────────────────────────────────────────────────────
 function setupEditModal() {
+  // Image upload area click-through
+  document.getElementById("edit-image-area").addEventListener("click", () => {
+    document.getElementById("edit-image").click();
+  });
+  document.getElementById("edit-image").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById("edit-image-preview");
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove("hidden");
+    document.getElementById("edit-image-area").querySelector("span:last-child").textContent = file.name;
+  });
+
   document.getElementById("close-edit-modal").addEventListener("click", () => {
     document.getElementById("edit-modal").classList.add("hidden");
   });
 
   document.getElementById("submit-edit-product").addEventListener("click", () => {
-    const id    = document.getElementById("edit-product-id").value;
-    const price = document.getElementById("edit-price").value;
-    const stock = document.getElementById("edit-stock").value;
-    const desc  = document.getElementById("edit-desc").value.trim();
+    const id        = document.getElementById("edit-product-id").value;
+    const price     = document.getElementById("edit-price").value;
+    const stock     = document.getElementById("edit-stock").value;
+    const desc      = document.getElementById("edit-desc").value.trim();
+    const imageFile = document.getElementById("edit-image").files[0];
 
-    fetch(`${API_BASE}/products/update/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ price, stock, description: desc })
-    })
+    const btn = document.getElementById("submit-edit-product");
+    btn.disabled = true;
+    btn.textContent = imageFile ? "Uploading..." : "Saving...";
+
+    const formData = new FormData();
+    formData.append("price", price);
+    formData.append("stock", stock);
+    formData.append("description", desc);
+    if (imageFile) formData.append("image", imageFile);
+
+    fetch(`${API_BASE}/products/update/${id}`, { method: "PUT", body: formData })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           document.getElementById("edit-modal").classList.add("hidden");
-          loadInventory(); // Refresh list
+          loadInventory();
         } else {
           alert(data.message);
         }
       })
-      .catch(() => alert("Failed to update product."));
+      .catch(() => alert("Failed to update product."))
+      .finally(() => { btn.disabled = false; btn.textContent = "Save Changes"; });
   });
 }
 
-window.openEditModal = function(id, price, stock, desc) {
+window.openEditModal = function(id, price, stock, desc, imageUrl) {
   document.getElementById("edit-product-id").value = id;
-  document.getElementById("edit-price").value = price;
-  document.getElementById("edit-stock").value = stock;
-  document.getElementById("edit-desc").value = desc;
+  document.getElementById("edit-price").value      = price;
+  document.getElementById("edit-stock").value      = stock;
+  document.getElementById("edit-desc").value       = desc;
+  document.getElementById("edit-image").value      = "";
+  document.getElementById("edit-image-area").querySelector("span:last-child").textContent = "Click to change image";
+
+  const preview = document.getElementById("edit-image-preview");
+  if (imageUrl) {
+    preview.src = imageUrl;
+    preview.classList.remove("hidden");
+  } else {
+    preview.src = "";
+    preview.classList.add("hidden");
+  }
+
   document.getElementById("edit-modal").classList.remove("hidden");
 };
 
@@ -332,7 +454,10 @@ function loadQR() {
 // ── 7. LOGOUT ─────────────────────────────────────────────────────────────────
 function setupLogout() {
   document.getElementById("logout-btn").addEventListener("click", () => {
+    stopOrderPolling();
+    stopTitleBlink();
     currentStore = null;
+    lastOrderCount = 0;
     document.getElementById("dashboard").classList.add("hidden");
     document.getElementById("login-screen").classList.remove("hidden");
     document.getElementById("login-slug").value = "";

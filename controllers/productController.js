@@ -1,7 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
+const { uploadToCloudinary } = require('../middleware/upload');
+
 const prisma = new PrismaClient();
 
-// 1. ADD NEW PRODUCT (For Postman Testing)
+// ── 1. ADD NEW PRODUCT ────────────────────────────────────────────────────────
 exports.createProduct = async (req, res) => {
   const { storeId, name, description, price, stock } = req.body;
 
@@ -13,13 +15,19 @@ exports.createProduct = async (req, res) => {
   }
 
   try {
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer);
+    }
+
     const product = await prisma.product.create({
       data: {
-        storeId: parseInt(storeId),
+        storeId:     parseInt(storeId),
         name,
-        description,
-        price: parseFloat(price),
-        stock: parseInt(stock) || 0
+        description: description || null,
+        price:       parseFloat(price),
+        stock:       parseInt(stock) || 0,
+        imageUrl
       }
     });
 
@@ -34,45 +42,31 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// 2. GET PRODUCTS FOR A SPECIFIC STORE (Customer view — in-stock only)
+// ── 2. GET PRODUCTS FOR A SPECIFIC STORE (customer view — in-stock only) ──────
 exports.getStoreProducts = async (req, res) => {
   const { storeId } = req.query;
 
   if (!storeId) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing storeId query parameter."
-    });
+    return res.status(400).json({ success: false, message: "Missing storeId query parameter." });
   }
 
   try {
     const products = await prisma.product.findMany({
-      where: {
-        storeId: parseInt(storeId),
-        stock: { gt: 0 } // Only display items that are actually in stock
-      }
+      where: { storeId: parseInt(storeId), stock: { gt: 0 } }
     });
-
-    return res.json({
-      success: true,
-      count: products.length,
-      products
-    });
+    return res.json({ success: true, count: products.length, products });
   } catch (error) {
     console.error("Error fetching products:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// 2b. GET ALL PRODUCTS FOR MERCHANT DASHBOARD (includes zero-stock items)
+// ── 3. GET ALL PRODUCTS FOR MERCHANT DASHBOARD (includes zero-stock) ──────────
 exports.getAllStoreProducts = async (req, res) => {
   const { storeId } = req.query;
 
   if (!storeId) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing storeId query parameter."
-    });
+    return res.status(400).json({ success: false, message: "Missing storeId query parameter." });
   }
 
   try {
@@ -80,52 +74,43 @@ exports.getAllStoreProducts = async (req, res) => {
       where: { storeId: parseInt(storeId) },
       orderBy: { createdAt: 'desc' }
     });
-
-    return res.json({
-      success: true,
-      count: products.length,
-      products
-    });
+    return res.json({ success: true, count: products.length, products });
   } catch (error) {
     console.error("Error fetching all products:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// 3. UPDATE PRODUCT PRICE AND STOCK (For daily inventory changes)
+// ── 4. UPDATE PRODUCT (price, stock, description, image) ──────────────────────
 exports.updateProduct = async (req, res) => {
   const { productId } = req.params;
   const { price, stock, description } = req.body;
 
   try {
-    // 1. Verify if the product actually exists before updating
     const existingProduct = await prisma.product.findUnique({
       where: { id: parseInt(productId) }
     });
 
     if (!existingProduct) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found."
-      });
+      return res.status(404).json({ success: false, message: "Product not found." });
     }
 
-    // 2. Perform the partial update
+    let imageUrl = existingProduct.imageUrl;
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer);
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(productId) },
       data: {
-        // Only update fields if they are provided in the request body
-        price: price !== undefined ? parseFloat(price) : existingProduct.price,
-        stock: stock !== undefined ? parseInt(stock) : existingProduct.stock,
-        description: description !== undefined ? description : existingProduct.description
+        price:       price       !== undefined ? parseFloat(price)   : existingProduct.price,
+        stock:       stock       !== undefined ? parseInt(stock)      : existingProduct.stock,
+        description: description !== undefined ? description          : existingProduct.description,
+        imageUrl
       }
     });
 
-    return res.json({
-      success: true,
-      message: "Product updated successfully!",
-      product: updatedProduct
-    });
+    return res.json({ success: true, message: "Product updated successfully!", product: updatedProduct });
   } catch (error) {
     console.error("Error updating product:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });

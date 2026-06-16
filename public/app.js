@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "/api";
 
 let currentStoreId = null;
 let currentStoreName = "";
@@ -32,6 +32,7 @@ function initializeStoreContext() {
         document.getElementById("store-name").innerText = data.store.name;
         document.getElementById("store-location").innerText = `${data.store.address}, ${data.store.city}`;
         document.getElementById("welcome-banner").classList.remove("hidden");
+        document.getElementById("my-orders-btn").classList.remove("hidden");
         fetchStoreProducts(currentStoreId);
       }
     })
@@ -57,7 +58,15 @@ function fetchStoreProducts(storeId) {
       data.products.forEach(product => {
         const card = document.createElement("div");
         card.className = "product-card";
+        card.dataset.name = product.name.toLowerCase();
+        card.dataset.desc = (product.description || '').toLowerCase();
         card.innerHTML = `
+          <div class="product-img-wrap">
+            ${product.imageUrl
+              ? `<img src="${product.imageUrl}" alt="${product.name}" class="product-img" loading="lazy" />`
+              : `<div class="product-img-placeholder"><span class="material-symbols-outlined">image_not_supported</span></div>`
+            }
+          </div>
           <div>
             <div class="product-name">${product.name}</div>
             <div class="product-desc">${product.description || 'Fresh local supply.'}</div>
@@ -72,11 +81,41 @@ function fetchStoreProducts(storeId) {
           </div>`;
         grid.appendChild(card);
       });
+
+      setupSearch();
     })
     .catch(err => {
       grid.innerHTML = `<div class="loading-shimmer">Failed to load local catalogue.</div>`;
       console.error(err);
     });
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function setupSearch() {
+  const input     = document.getElementById("product-search");
+  const clearBtn  = document.getElementById("clear-search");
+  const emptyMsg  = document.getElementById("search-empty");
+
+  input.addEventListener("input", () => {
+    const query = input.value.trim().toLowerCase();
+    const cards = document.querySelectorAll(".product-card");
+    let visible = 0;
+
+    cards.forEach(card => {
+      const matches = card.dataset.name.includes(query) || card.dataset.desc.includes(query);
+      card.style.display = matches ? "" : "none";
+      if (matches) visible++;
+    });
+
+    clearBtn.classList.toggle("hidden", query === "");
+    emptyMsg.classList.toggle("hidden", visible > 0 || query === "");
+  });
+
+  clearBtn.addEventListener("click", () => {
+    input.value = "";
+    input.dispatchEvent(new Event("input"));
+    input.focus();
+  });
 }
 
 // ── 3. CART ACTIONS ───────────────────────────────────────────────────────────
@@ -148,6 +187,37 @@ function setupEventListeners() {
     modal.classList.add("hidden");
   });
 
+  // ── MY ORDERS MODAL ──────────────────────────────────────────────────────
+  const myOrdersModal = document.getElementById("my-orders-modal");
+
+  document.getElementById("my-orders-btn").addEventListener("click", () => {
+    myOrdersModal.classList.remove("hidden");
+    // Pre-fill & load if phone already entered in checkout form
+    const existingPhone = document.getElementById("cust-phone").value.trim();
+    if (existingPhone.length === 10) {
+      document.getElementById("orders-phone-input").value = existingPhone;
+      loadCustomerOrders(existingPhone);
+    }
+  });
+
+  document.getElementById("close-my-orders").addEventListener("click", () => {
+    myOrdersModal.classList.add("hidden");
+  });
+
+  document.getElementById("my-orders-overlay").addEventListener("click", () => {
+    myOrdersModal.classList.add("hidden");
+  });
+
+  document.getElementById("orders-phone-btn").addEventListener("click", () => {
+    const phone = document.getElementById("orders-phone-input").value.trim();
+    if (phone.length !== 10) { alert("Please enter a valid 10-digit phone number."); return; }
+    loadCustomerOrders(phone);
+  });
+
+  document.getElementById("orders-phone-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("orders-phone-btn").click();
+  });
+
   // Update button label when payment method changes
   document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
     radio.addEventListener("change", () => {
@@ -158,14 +228,9 @@ function setupEventListeners() {
 
   document.getElementById("order-form").addEventListener("submit", (e) => {
     e.preventDefault();
-
     const method = document.querySelector('input[name="payment-method"]:checked').value;
-
-    if (method === "online") {
-      handleOnlinePayment();
-    } else {
-      handleCODOrder();
-    }
+    if (method === "online") handleOnlinePayment();
+    else handleCODOrder();
   });
 }
 
@@ -209,6 +274,7 @@ function handleOnlinePayment() {
             customerName: name,
             storeId: currentStoreId,
             totalAmount: totalPrice,
+            cart,
             deliveryAddress: document.getElementById("cust-address").value,
             razorpayOrderId: response.razorpay_order_id,
             razorpayPaymentId: response.razorpay_payment_id,
@@ -269,6 +335,7 @@ function handleCODOrder() {
     customerName: document.getElementById("cust-name").value,
     storeId: currentStoreId,
     totalAmount: totalPrice,
+    cart,
     deliveryAddress: document.getElementById("cust-address").value
   };
 
@@ -298,13 +365,76 @@ function handleCODOrder() {
 // ── 7. SUCCESS HANDLER ────────────────────────────────────────────────────────
 function showOrderSuccess(orderId, method) {
   const modal = document.getElementById("checkout-modal");
-  const note = method === "COD"
-    ? "Pay cash when your order arrives."
-    : "Payment confirmed ✓";
+  const note = method === "COD" ? "Pay cash when your order arrives." : "Payment confirmed ✓";
 
   alert(`🛒 Order Placed!\nOrder ID: #${orderId}\n${note}`);
   cart = {};
   updateCartUI();
   modal.classList.add("hidden");
-  location.reload();
+
+  // Auto-open My Orders so customer sees their new order immediately
+  const phone = document.getElementById("cust-phone").value.trim();
+  if (phone.length === 10) {
+    document.getElementById("orders-phone-input").value = phone;
+    document.getElementById("my-orders-modal").classList.remove("hidden");
+    loadCustomerOrders(phone);
+  } else {
+    location.reload();
+  }
+}
+
+// ── 8. CUSTOMER ORDER HISTORY ─────────────────────────────────────────────────
+function loadCustomerOrders(phone) {
+  const list = document.getElementById("my-orders-list");
+
+  list.innerHTML = `<div class="orders-loading">Loading your orders...</div>`;
+
+  fetch(`${API_BASE}/orders/customer/${encodeURIComponent(phone)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success || data.orders.length === 0) {
+        list.innerHTML = `<div class="orders-loading">No orders yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = "";
+      data.orders.forEach(order => {
+        const itemsHtml = order.items.map(i =>
+          `<div class="cust-order-item">
+            <span>${i.name} × ${i.quantity}</span>
+            <span>₹${(parseFloat(i.price) * i.quantity).toFixed(2)}</span>
+          </div>`
+        ).join('');
+
+        const card = document.createElement("div");
+        card.className = "cust-order-card";
+        card.innerHTML = `
+          <div class="cust-order-header">
+            <div>
+              <span class="cust-order-id">Order #${order.id}</span>
+              <span class="cust-order-store">${order.store?.name || ''}</span>
+            </div>
+            <span class="cust-status-badge cust-status-${order.status.toLowerCase()}">${formatOrderStatus(order.status)}</span>
+          </div>
+          <div class="cust-order-items">${itemsHtml}</div>
+          <div class="cust-order-footer">
+            <span class="cust-order-total">Total: ₹${parseFloat(order.totalAmount).toFixed(2)}</span>
+            <span class="cust-payment-tag">${order.paymentMethod}</span>
+          </div>`;
+        list.appendChild(card);
+      });
+    })
+    .catch(() => {
+      list.innerHTML = `<div class="orders-loading">Could not load orders.</div>`;
+    });
+}
+
+function formatOrderStatus(s) {
+  return {
+    PENDING: '🕐 Pending',
+    PREPARING: '👨‍🍳 Preparing',
+    OUT_FOR_DELIVERY: '🚴 Out for Delivery',
+    DELIVERED: '✅ Delivered',
+    CANCELLED: '❌ Cancelled'
+  }[s] || s;
 }

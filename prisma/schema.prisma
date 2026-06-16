@@ -54,15 +54,17 @@ model StoreCustomer {
 
 // 4. The Products Table (Scoped tightly to its specific parent store)
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   storeId     Int
   name        String
   description String?
-  price       Decimal  @db.Decimal(10, 2) // Handles exact currency math perfectly
-  stock       Int      @default(0)
-  createdAt   DateTime @default(now())
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String?     // Cloudinary URL, optional
+  createdAt   DateTime    @default(now())
 
-  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
 }
 
 // 5. The Orders Table
@@ -75,12 +77,26 @@ model Order {
   deliveryAddress   String
   paymentMethod     PaymentMethod @default(COD)
   paymentStatus     PaymentStatus @default(PENDING)
-  razorpayOrderId   String?       // Razorpay order id (rzp_order_xxx)
-  razorpayPaymentId String?       // Razorpay payment id after success
+  razorpayOrderId   String?
+  razorpayPaymentId String?
   createdAt         DateTime      @default(now())
 
   store             Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             OrderItem[]
+}
+
+// 6. Order line items — snapshot of what was ordered
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  name      String  // snapshot at time of order
+  price     Decimal @db.Decimal(10, 2)
+  quantity  Int
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 enum OrderStatus {

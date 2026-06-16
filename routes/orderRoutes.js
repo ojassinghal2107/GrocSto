@@ -11,6 +11,9 @@ router.post('/verify-payment', orderController.verifyAndPlaceOrder);
 // POST: Place a Cash on Delivery order
 router.post('/checkout', orderController.placeCODOrder);
 
+// GET: Fetch all orders for a customer by phone
+router.get('/customer/:phone', orderController.getCustomerOrders);
+
 // GET: Fetch all orders for a store (merchant dashboard)
 router.get('/store/:storeId', orderController.getStoreOrders);
 
