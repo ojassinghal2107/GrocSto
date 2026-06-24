@@ -303,7 +303,7 @@ function setupInventoryPanel() {
     const preview = document.getElementById("add-image-preview");
     preview.src = URL.createObjectURL(file);
     preview.classList.remove("hidden");
-    document.getElementById("add-image-area").querySelector("span:last-child").textContent = file.name;
+    document.getElementById("add-image-area").querySelector("span.upload-label").textContent = file.name;
   });
 
   document.getElementById("show-add-product-btn").addEventListener("click", () => {
@@ -362,7 +362,7 @@ function clearAddForm() {
   const preview = document.getElementById("add-image-preview");
   preview.src = "";
   preview.classList.add("hidden");
-  document.getElementById("add-image-area").querySelector("span:last-child").textContent = "Click to upload image";
+  document.getElementById("add-image-area").querySelector("span.upload-label").textContent = "Click to upload image";
 }
 
 // ── 5. EDIT MODAL ─────────────────────────────────────────────────────────────
@@ -377,7 +377,7 @@ function setupEditModal() {
     const preview = document.getElementById("edit-image-preview");
     preview.src = URL.createObjectURL(file);
     preview.classList.remove("hidden");
-    document.getElementById("edit-image-area").querySelector("span:last-child").textContent = file.name;
+    document.getElementById("edit-image-area").querySelector("span.upload-label").textContent = file.name;
   });
 
   document.getElementById("close-edit-modal").addEventListener("click", () => {
@@ -426,7 +426,7 @@ window.openEditModal = function(id, price, stock, desc, imageUrl) {
   document.getElementById("edit-stock").value      = stock;
   document.getElementById("edit-desc").value       = desc;
   document.getElementById("edit-image").value      = "";
-  document.getElementById("edit-image-area").querySelector("span:last-child").textContent = "Click to change image";
+  document.getElementById("edit-image-area").querySelector("span.upload-label").textContent = "Click to change image";
 
   const preview = document.getElementById("edit-image-preview");
   if (imageUrl) {
