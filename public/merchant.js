@@ -413,6 +413,8 @@ function setupEditModal() {
       })
       .catch(() => alert("Failed to delete product."));
   });
+
+  document.getElementById("mark-out-of-stock-btn").addEventListener("click", () => {
     const stockInput = document.getElementById("edit-stock");
     stockInput.value = 0;
     stockInput.classList.add("out-of-stock-active");
