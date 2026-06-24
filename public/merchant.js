@@ -269,9 +269,26 @@ function renderInventoryItem(p, container) {
       <div class="item-price">₹${parseFloat(p.price).toFixed(2)}</div>
       <div class="item-stock ${p.stock <= 5 ? 'low' : ''}">${p.stock} in stock</div>
     </div>
-    <button class="edit-btn" onclick="openEditModal(${p.id}, ${p.price}, ${p.stock}, '${(p.description || '').replace(/'/g, "\\'")}', '${p.imageUrl || ''}')">
+    <button class="edit-btn"
+      data-id="${p.id}"
+      data-price="${p.price}"
+      data-stock="${p.stock}"
+      data-desc="${(p.description || '').replace(/"/g, '&quot;')}"
+      data-image="${p.imageUrl || ''}">
       <span class="material-symbols-outlined" style="font-size:16px">edit</span> Edit
     </button>`;
+
+  // Attach edit button listener safely (avoids URL-breaking inline onclick)
+  item.querySelector('.edit-btn').addEventListener('click', function() {
+    openEditModal(
+      this.dataset.id,
+      this.dataset.price,
+      this.dataset.stock,
+      this.dataset.desc,
+      this.dataset.image
+    );
+  });
+
   container.appendChild(item);
 }
 

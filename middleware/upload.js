@@ -25,6 +25,9 @@ const upload = multer({
 
 // Helper: upload a buffer to Cloudinary and return the secure URL
 function uploadToCloudinary(buffer, folder = 'grocsto/products') {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME === 'your_cloud_name') {
+    return Promise.reject(new Error('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in Railway Variables.'));
+  }
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder, resource_type: 'image', transformation: [{ width: 600, crop: 'limit', quality: 'auto' }] },

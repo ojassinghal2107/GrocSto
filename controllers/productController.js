@@ -17,7 +17,12 @@ exports.createProduct = async (req, res) => {
   try {
     let imageUrl = null;
     if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer);
+      try {
+        imageUrl = await uploadToCloudinary(req.file.buffer);
+      } catch (uploadErr) {
+        console.error("Cloudinary upload error:", uploadErr.message);
+        return res.status(500).json({ success: false, message: `Image upload failed: ${uploadErr.message}` });
+      }
     }
 
     const product = await prisma.product.create({
@@ -97,7 +102,12 @@ exports.updateProduct = async (req, res) => {
 
     let imageUrl = existingProduct.imageUrl;
     if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer);
+      try {
+        imageUrl = await uploadToCloudinary(req.file.buffer);
+      } catch (uploadErr) {
+        console.error("Cloudinary upload error:", uploadErr.message);
+        return res.status(500).json({ success: false, message: `Image upload failed: ${uploadErr.message}` });
+      }
     }
 
     const updatedProduct = await prisma.product.update({
