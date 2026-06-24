@@ -8,10 +8,7 @@ exports.createProduct = async (req, res) => {
   const { storeId, name, description, price, stock } = req.body;
 
   if (!storeId || !name || !price) {
-    return res.status(400).json({
-      success: false,
-      message: "storeId, name, and price are required fields."
-    });
+    return res.status(400).json({ success: false, message: "storeId, name, and price are required fields." });
   }
 
   try {
@@ -36,11 +33,7 @@ exports.createProduct = async (req, res) => {
       }
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Product added successfully to inventory!",
-      product
-    });
+    return res.status(201).json({ success: true, message: "Product added successfully to inventory!", product });
   } catch (error) {
     console.error("Error creating product:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -86,20 +79,6 @@ exports.getAllStoreProducts = async (req, res) => {
   }
 };
 
-// ── 5. DELETE PRODUCT ─────────────────────────────────────────────────────────
-exports.deleteProduct = async (req, res) => {
-  const { productId } = req.params;
-
-  try {
-    const existing = await prisma.product.findUnique({ where: { id: parseInt(productId) } });
-    if (!existing) return res.status(404).json({ success: false, message: "Product not found." });
-
-    await prisma.product.delete({ where: { id: parseInt(productId) } });
-    return res.json({ success: true, message: "Product deleted." });
-  } catch (error) {
-    console.error("Error deleting product:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
-  }
 // ── 4. UPDATE PRODUCT (price, stock, description, image) ──────────────────────
 exports.updateProduct = async (req, res) => {
   const { productId } = req.params;
@@ -137,6 +116,22 @@ exports.updateProduct = async (req, res) => {
     return res.json({ success: true, message: "Product updated successfully!", product: updatedProduct });
   } catch (error) {
     console.error("Error updating product:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ── 5. DELETE PRODUCT ─────────────────────────────────────────────────────────
+exports.deleteProduct = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const existing = await prisma.product.findUnique({ where: { id: parseInt(productId) } });
+    if (!existing) return res.status(404).json({ success: false, message: "Product not found." });
+
+    await prisma.product.delete({ where: { id: parseInt(productId) } });
+    return res.json({ success: true, message: "Product deleted." });
+  } catch (error) {
+    console.error("Error deleting product:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
