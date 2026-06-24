@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTabNav();
   setupInventoryPanel();
   setupEditModal();
+  setupEditOrderModal();
   setupLogout();
 });
 
@@ -183,9 +184,14 @@ function loadOrders() {
           </div>
           <div class="order-card-footer">
             <div class="order-amount">₹${parseFloat(order.totalAmount).toFixed(2)}</div>
-            <select class="status-select" data-order-id="${order.id}" onchange="updateOrderStatus(${order.id}, this.value)">
-              ${statusOptions(order.status)}
-            </select>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="edit-order-btn icon-btn" onclick="openEditOrderModal(${order.id})">
+                <span class="material-symbols-outlined" style="font-size:16px">edit_note</span> Edit Items
+              </button>
+              <select class="status-select" data-order-id="${order.id}" onchange="updateOrderStatus(${order.id}, this.value)">
+                ${statusOptions(order.status)}
+              </select>
+            </div>
           </div>`;
         list.appendChild(card);
       });
@@ -511,6 +517,99 @@ function loadQR() {
     .catch(() => {
       wrapper.innerHTML = `<div class="empty-state">Failed to generate QR.</div>`;
     });
+}
+
+// ── 6. EDIT ORDER MODAL ───────────────────────────────────────────────────────
+let editOrderItems = []; // working copy of items being edited
+
+function setupEditOrderModal() {
+  document.getElementById("close-edit-order-modal").addEventListener("click", () => {
+    document.getElementById("edit-order-modal").classList.add("hidden");
+  });
+  document.getElementById("edit-order-overlay").addEventListener("click", () => {
+    document.getElementById("edit-order-modal").classList.add("hidden");
+  });
+  document.getElementById("save-edit-order-btn").addEventListener("click", saveEditOrder);
+}
+
+window.openEditOrderModal = function(orderId) {
+  // Fetch order details fresh
+  fetch(`${API_BASE}/orders/store/${currentStore.id}`)
+    .then(res => res.json())
+    .then(data => {
+      const order = data.orders.find(o => o.id === orderId);
+      if (!order) return alert("Order not found.");
+
+      editOrderItems = order.items.map(i => ({ ...i, quantity: i.quantity }));
+
+      document.getElementById("edit-order-id-label").textContent = `#${orderId}`;
+      document.getElementById("edit-order-modal").dataset.orderId = orderId;
+      renderEditOrderItems();
+      document.getElementById("edit-order-modal").classList.remove("hidden");
+    });
+};
+
+function renderEditOrderItems() {
+  const list = document.getElementById("edit-order-items-list");
+  list.innerHTML = "";
+
+  editOrderItems.forEach((item, idx) => {
+    const row = document.createElement("div");
+    row.className = "edit-order-item-row";
+    row.innerHTML = `
+      <div class="edit-order-item-name">
+        ${item.quantity <= 0 ? `<s style="color:#94a3b8">${item.name}</s> <span class="removed-tag">Removed</span>` : item.name}
+      </div>
+      <div class="edit-order-item-controls">
+        <button onclick="changeEditQty(${idx}, -1)" class="qty-btn">−</button>
+        <span class="edit-qty-display ${item.quantity <= 0 ? 'zero' : ''}">${item.quantity}</span>
+        <button onclick="changeEditQty(${idx}, 1)" class="qty-btn">+</button>
+      </div>
+      <div class="edit-order-item-price">
+        ₹${(parseFloat(item.price) * Math.max(item.quantity, 0)).toFixed(2)}
+      </div>`;
+    list.appendChild(row);
+  });
+
+  updateEditOrderTotal();
+}
+
+window.changeEditQty = function(idx, delta) {
+  editOrderItems[idx].quantity = Math.max(0, editOrderItems[idx].quantity + delta);
+  renderEditOrderItems();
+};
+
+function updateEditOrderTotal() {
+  const total = editOrderItems.reduce((sum, i) =>
+    sum + parseFloat(i.price) * Math.max(i.quantity, 0), 0
+  );
+  document.getElementById("edit-order-new-total").textContent = `₹${total.toFixed(2)}`;
+}
+
+function saveEditOrder() {
+  const orderId = document.getElementById("edit-order-modal").dataset.orderId;
+  const btn = document.getElementById("save-edit-order-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
+  const items = editOrderItems.map(i => ({ id: i.id, quantity: i.quantity }));
+
+  fetch(`${API_BASE}/orders/edit-items/${orderId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById("edit-order-modal").classList.add("hidden");
+        loadOrders(); // Refresh order list
+      } else {
+        alert(data.message);
+      }
+    })
+    .catch(() => alert("Failed to update order."))
+    .finally(() => { btn.disabled = false; btn.textContent = "Save Changes"; });
 }
 
 // ── 7. LOGOUT ─────────────────────────────────────────────────────────────────

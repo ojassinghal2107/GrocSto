@@ -191,6 +191,30 @@
     </div>
   </div>
 
+  <!-- Edit Order Modal -->
+  <div id="edit-order-modal" class="modal hidden">
+    <div class="modal-overlay" id="edit-order-overlay"></div>
+    <div class="modal-content modal-center">
+      <div class="modal-header">
+        <h2>Edit Order <span id="edit-order-id-label"></span></h2>
+        <button id="close-edit-order-modal" class="close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:14px">
+        Adjust quantities or remove out-of-stock items. Set quantity to 0 to remove.
+      </p>
+      <div id="edit-order-items-list"></div>
+      <div class="edit-order-total-row">
+        <span>New Total</span>
+        <span id="edit-order-new-total">₹0.00</span>
+      </div>
+      <button id="save-edit-order-btn" class="primary-btn" style="width:100%;margin-top:12px">
+        Save Changes
+      </button>
+    </div>
+  </div>
+
   <script src="merchant.js"></script>
 </body>
 </html>

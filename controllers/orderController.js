@@ -228,3 +228,55 @@ exports.updateOrderStatus = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// ── 7. EDIT ORDER ITEMS (merchant can adjust quantities / remove items) ────────
+exports.editOrderItems = async (req, res) => {
+  const { orderId } = req.params;
+  // items: [{ id, quantity }]  — quantity 0 means remove the item
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0)
+    return res.status(400).json({ success: false, message: "items array is required." });
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
+      include: { items: true }
+    });
+    if (!order)
+      return res.status(404).json({ success: false, message: "Order not found." });
+
+    // Apply each item update
+    for (const update of items) {
+      if (parseInt(update.quantity) <= 0) {
+        // Remove item
+        await prisma.orderItem.delete({ where: { id: parseInt(update.id) } });
+      } else {
+        // Update quantity
+        await prisma.orderItem.update({
+          where: { id: parseInt(update.id) },
+          data: { quantity: parseInt(update.quantity) }
+        });
+      }
+    }
+
+    // Recalculate total from remaining items
+    const updatedItems = await prisma.orderItem.findMany({
+      where: { orderId: parseInt(orderId) }
+    });
+    const newTotal = updatedItems.reduce((sum, i) =>
+      sum + parseFloat(i.price) * i.quantity, 0
+    );
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: parseInt(orderId) },
+      data: { totalAmount: newTotal },
+      include: { items: true, user: { select: { name: true, phone: true } } }
+    });
+
+    return res.json({ success: true, message: "Order updated.", order: updatedOrder });
+  } catch (error) {
+    console.error("Error editing order:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

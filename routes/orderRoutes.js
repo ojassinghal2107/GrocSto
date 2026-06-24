@@ -20,4 +20,7 @@ router.get('/store/:storeId', orderController.getStoreOrders);
 // PUT: Update the status of a specific order
 router.put('/status/:orderId', orderController.updateOrderStatus);
 
+// PUT: Edit order items (merchant adjusts quantities or removes out-of-stock items)
+router.put('/edit-items/:orderId', orderController.editOrderItems);
+
 module.exports = router;

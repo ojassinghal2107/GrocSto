@@ -344,3 +344,44 @@ input.out-of-stock-active {
 }
 .delete-product-btn:hover { background: #fff1f2; }
 .delete-product-btn .material-symbols-outlined { font-size: 18px; }
+
+/* ── EDIT ORDER MODAL ── */
+.edit-order-item-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.edit-order-item-row:last-child { border-bottom: none; }
+
+.edit-order-item-name { flex: 1; font-size: 14px; color: var(--text-main); }
+.removed-tag {
+  font-size: 11px; background: #fff1f2; color: #e11d48;
+  padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;
+}
+
+.edit-order-item-controls { display: flex; align-items: center; gap: 8px; }
+.qty-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: var(--background);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-weight: 700;
+}
+.qty-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.edit-qty-display { font-size: 15px; font-weight: 700; min-width: 24px; text-align: center; }
+.edit-qty-display.zero { color: #e11d48; }
+
+.edit-order-item-price { font-size: 14px; font-weight: 600; color: var(--text-main); min-width: 70px; text-align: right; }
+
+.edit-order-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 16px; font-weight: 700; padding: 14px 0 0;
+  border-top: 2px solid var(--border); margin-top: 8px;
+}
+
+.edit-order-btn {
+  font-size: 13px; padding: 6px 10px; color: var(--primary);
+  border: 1.5px solid var(--primary); border-radius: 8px;
+  background: transparent; cursor: pointer; display: flex;
+  align-items: center; gap: 4px; white-space: nowrap;
+}
+.edit-order-btn:hover { background: #f0fdf9; }
