@@ -384,6 +384,10 @@ function setupEditModal() {
     document.getElementById("edit-modal").classList.add("hidden");
   });
 
+  document.getElementById("edit-modal-overlay").addEventListener("click", () => {
+    document.getElementById("edit-modal").classList.add("hidden");
+  });
+
   document.getElementById("submit-edit-product").addEventListener("click", () => {
     const id        = document.getElementById("edit-product-id").value;
     const price     = document.getElementById("edit-price").value;
