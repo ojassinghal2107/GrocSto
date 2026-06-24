@@ -388,7 +388,31 @@ function setupEditModal() {
     document.getElementById("edit-modal").classList.add("hidden");
   });
 
-  document.getElementById("mark-out-of-stock-btn").addEventListener("click", () => {
+  document.getElementById("delete-product-btn").addEventListener("click", () => {
+    const id   = document.getElementById("edit-product-id").value;
+    const name = document.querySelector(`#inv-item-${id} .item-name`)?.textContent || "this product";
+
+    if (!confirm(`Delete "${name}" permanently? This cannot be undone.`)) return;
+
+    fetch(`${API_BASE}/products/delete/${id}`, { method: "DELETE" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById("edit-modal").classList.add("hidden");
+          // Remove item from DOM instantly
+          const el = document.getElementById(`inv-item-${id}`);
+          if (el) el.remove();
+          // If inventory is now empty, show empty state
+          const list = document.getElementById("inventory-list");
+          if (!list.children.length) {
+            list.innerHTML = `<div class="empty-state">No products yet. Add your first item above.</div>`;
+          }
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(() => alert("Failed to delete product."));
+  });
     const stockInput = document.getElementById("edit-stock");
     stockInput.value = 0;
     stockInput.classList.add("out-of-stock-active");

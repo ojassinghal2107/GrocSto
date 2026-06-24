@@ -86,6 +86,20 @@ exports.getAllStoreProducts = async (req, res) => {
   }
 };
 
+// ── 5. DELETE PRODUCT ─────────────────────────────────────────────────────────
+exports.deleteProduct = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const existing = await prisma.product.findUnique({ where: { id: parseInt(productId) } });
+    if (!existing) return res.status(404).json({ success: false, message: "Product not found." });
+
+    await prisma.product.delete({ where: { id: parseInt(productId) } });
+    return res.json({ success: true, message: "Product deleted." });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 // ── 4. UPDATE PRODUCT (price, stock, description, image) ──────────────────────
 exports.updateProduct = async (req, res) => {
   const { productId } = req.params;

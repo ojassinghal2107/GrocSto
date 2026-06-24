@@ -15,4 +15,7 @@ router.get('/all', productController.getAllStoreProducts);
 // PUT: Update price, stock, description, or image
 router.put('/update/:productId', upload.single('image'), productController.updateProduct);
 
+// DELETE: Remove a product permanently
+router.delete('/delete/:productId', productController.deleteProduct);
+
 module.exports = router;

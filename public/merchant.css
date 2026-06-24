@@ -332,3 +332,15 @@ body { background: var(--background); color: var(--text-main); min-height: 100vh
 input.out-of-stock-active {
   border-color: #e11d48; background: #fff1f2; color: #e11d48; font-weight: 600;
 }
+
+/* ── DELETE PRODUCT BUTTON ── */
+.delete-product-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 10px; padding: 12px;
+  background: transparent; border: 1.5px solid #fecdd3;
+  color: #e11d48; border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background 0.2s;
+}
+.delete-product-btn:hover { background: #fff1f2; }
+.delete-product-btn .material-symbols-outlined { font-size: 18px; }
