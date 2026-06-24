@@ -163,7 +163,13 @@
       </div>
       <div class="form-group">
         <label>Stock Quantity</label>
-        <input type="number" id="edit-stock" />
+        <div class="stock-row">
+          <input type="number" id="edit-stock" style="flex:1" />
+          <button type="button" id="mark-out-of-stock-btn" class="out-of-stock-btn">
+            <span class="material-symbols-outlined">remove_shopping_cart</span>
+            Mark Out of Stock
+          </button>
+        </div>
       </div>
       <div class="form-group">
         <label>Description</label>

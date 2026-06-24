@@ -314,3 +314,21 @@ body { background: var(--background); color: var(--text-main); min-height: 100vh
   color: var(--text-muted); flex-shrink: 0;
 }
 .inv-thumb-placeholder .material-symbols-outlined { font-size: 22px; }
+
+/* ── OUT OF STOCK BUTTON ── */
+.stock-row { display: flex; gap: 10px; align-items: center; }
+
+.out-of-stock-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: #fff1f2; color: #e11d48; border: 1.5px solid #fecdd3;
+  border-radius: var(--radius-md); padding: 8px 12px;
+  font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background 0.2s;
+}
+.out-of-stock-btn:hover:not(:disabled) { background: #ffe4e6; }
+.out-of-stock-btn:disabled { opacity: 0.6; cursor: default; }
+.out-of-stock-btn .material-symbols-outlined { font-size: 16px; }
+
+input.out-of-stock-active {
+  border-color: #e11d48; background: #fff1f2; color: #e11d48; font-weight: 600;
+}

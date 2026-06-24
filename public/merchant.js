@@ -388,6 +388,14 @@ function setupEditModal() {
     document.getElementById("edit-modal").classList.add("hidden");
   });
 
+  document.getElementById("mark-out-of-stock-btn").addEventListener("click", () => {
+    const stockInput = document.getElementById("edit-stock");
+    stockInput.value = 0;
+    stockInput.classList.add("out-of-stock-active");
+    document.getElementById("mark-out-of-stock-btn").textContent = "✓ Marked Out of Stock";
+    document.getElementById("mark-out-of-stock-btn").disabled = true;
+  });
+
   document.getElementById("submit-edit-product").addEventListener("click", () => {
     const id        = document.getElementById("edit-product-id").value;
     const price     = document.getElementById("edit-price").value;
@@ -427,6 +435,13 @@ window.openEditModal = function(id, price, stock, desc, imageUrl) {
   document.getElementById("edit-desc").value       = desc;
   document.getElementById("edit-image").value      = "";
   document.getElementById("edit-image-area").querySelector("span.upload-label").textContent = "Click to change image";
+
+  // Reset out-of-stock button
+  const oosBtn = document.getElementById("mark-out-of-stock-btn");
+  const stockInput = document.getElementById("edit-stock");
+  oosBtn.disabled = false;
+  oosBtn.innerHTML = `<span class="material-symbols-outlined">remove_shopping_cart</span> Mark Out of Stock`;
+  stockInput.classList.remove("out-of-stock-active");
 
   const preview = document.getElementById("edit-image-preview");
   if (imageUrl) {
