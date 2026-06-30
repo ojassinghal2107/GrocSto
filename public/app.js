@@ -19,12 +19,26 @@ document.addEventListener("DOMContentLoaded", () => {
 // ── 1. EXTRACT QR SLUG AND RESOLVE STORE ─────────────────────────────────────
 function initializeStoreContext() {
   const urlParams = new URLSearchParams(window.location.search);
-  const storeSlug = urlParams.get('store');
+  let storeSlug = urlParams.get('store');
+
+  // If no slug in URL, fall back to the one saved when the user last scanned
+  if (!storeSlug) {
+    storeSlug = localStorage.getItem('grocsto-last-store');
+  }
 
   if (!storeSlug) {
     document.getElementById("store-name").innerText = "No QR Scan Detected";
     document.getElementById("store-location").innerText = "Please scan a physical store QR code.";
     return;
+  }
+
+  // Persist the slug so home-screen shortcut always reopens the right store
+  localStorage.setItem('grocsto-last-store', storeSlug);
+
+  // Keep the URL clean and correct (matters when launched from home screen)
+  const correctUrl = `${window.location.pathname}?store=${storeSlug}`;
+  if (window.location.search !== `?store=${storeSlug}`) {
+    history.replaceState(null, '', correctUrl);
   }
 
   fetch(`${API_BASE}/stores/scan/${storeSlug}`)
@@ -41,6 +55,10 @@ function initializeStoreContext() {
         document.getElementById("welcome-banner").classList.remove("hidden");
         document.getElementById("my-orders-btn").classList.remove("hidden");
         fetchStoreProducts(currentStoreId);
+
+        // Patch the manifest start_url dynamically so "Add to Home Screen"
+        // saves the store-specific URL, not just "/"
+        patchManifestStartUrl(storeSlug);
       }
     })
     .catch(err => {
@@ -526,6 +544,24 @@ function formatOrderStatus(s) {
 
 // ── PWA: SERVICE WORKER + INSTALL BANNER ─────────────────────────────────────
 let deferredInstallPrompt = null;
+
+// Dynamically update the manifest's start_url to include the current store slug.
+// This ensures "Add to Home Screen" saves the store-specific URL.
+function patchManifestStartUrl(storeSlug) {
+  const manifestEl = document.querySelector('link[rel="manifest"]');
+  if (!manifestEl) return;
+
+  // Fetch the original manifest, patch start_url, re-inject as a blob URL
+  fetch('/manifest.json')
+    .then(r => r.json())
+    .then(manifest => {
+      manifest.start_url = `/?store=${storeSlug}`;
+      manifest.scope = '/';
+      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+      manifestEl.href = URL.createObjectURL(blob);
+    })
+    .catch(() => {}); // non-critical — silently ignore
+}
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
