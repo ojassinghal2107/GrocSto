@@ -145,7 +145,40 @@ exports.getStoreQR = async (req, res) => {
   }
 };
 
-// 5. SET / RESET PASSWORD FOR AN EXISTING STORE (Postman use)
+// 6. DYNAMIC MANIFEST — returns manifest.json with store-specific start_url
+// Used by the frontend to make "Add to Home Screen" save the correct store URL.
+exports.getStoreManifest = (req, res) => {
+  const { store } = req.query;
+
+  const manifest = {
+    name: "GrocSto",
+    short_name: "GrocSto",
+    description: "Order groceries from your local store",
+    start_url: store ? `/?store=${encodeURIComponent(store)}` : "/",
+    scope: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#10b981",
+    orientation: "portrait",
+    icons: [
+      {
+        src: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any maskable"
+      },
+      {
+        src: "/icons/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any maskable"
+      }
+    ]
+  };
+
+  res.setHeader('Content-Type', 'application/manifest+json');
+  return res.json(manifest);
+};
 exports.setStorePassword = async (req, res) => {
   const { slug, password } = req.body;
 

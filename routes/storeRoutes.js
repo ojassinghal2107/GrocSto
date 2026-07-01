@@ -17,4 +17,7 @@ router.post('/set-password', storeController.setStorePassword);
 // GET: Generate and fetch the scannable QR image string for a shop
 router.get('/qr/:storeSlug', storeController.getStoreQR);
 
+// GET: Dynamic manifest with store-specific start_url (for PWA install)
+router.get('/manifest', storeController.getStoreManifest);
+
 module.exports = router;

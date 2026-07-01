@@ -56,9 +56,9 @@ function initializeStoreContext() {
         document.getElementById("my-orders-btn").classList.remove("hidden");
         fetchStoreProducts(currentStoreId);
 
-        // Patch the manifest start_url dynamically so "Add to Home Screen"
+        // Update the manifest start_url dynamically so "Add to Home Screen"
         // saves the store-specific URL, not just "/"
-        patchManifestStartUrl(storeSlug);
+        updateManifestStartUrl(storeSlug);
       }
     })
     .catch(err => {
@@ -546,21 +546,13 @@ function formatOrderStatus(s) {
 let deferredInstallPrompt = null;
 
 // Dynamically update the manifest's start_url to include the current store slug.
-// This ensures "Add to Home Screen" saves the store-specific URL.
-function patchManifestStartUrl(storeSlug) {
+// Uses a proper server-side manifest URL (not a blob) so Chrome's installability
+// check passes and "Add to Home Screen" works correctly.
+function updateManifestStartUrl(storeSlug) {
   const manifestEl = document.querySelector('link[rel="manifest"]');
   if (!manifestEl) return;
-
-  // Fetch the original manifest, patch start_url, re-inject as a blob URL
-  fetch('/manifest.json')
-    .then(r => r.json())
-    .then(manifest => {
-      manifest.start_url = `/?store=${storeSlug}`;
-      manifest.scope = '/';
-      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-      manifestEl.href = URL.createObjectURL(blob);
-    })
-    .catch(() => {}); // non-critical — silently ignore
+  // Point to a server route that returns the manifest with the correct start_url
+  manifestEl.href = `/api/stores/manifest?store=${encodeURIComponent(storeSlug)}`;
 }
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
