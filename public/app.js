@@ -579,9 +579,8 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  if (!localStorage.getItem('pwa-dismissed')) {
-    setTimeout(() => showInstallBanner(), 3000);
-  }
+  // Always show the banner whenever the browser fires the install prompt
+  setTimeout(() => showInstallBanner(), 3000);
 });
 
 function showInstallBanner() {
@@ -589,17 +588,15 @@ function showInstallBanner() {
   if (banner) banner.classList.remove('hidden');
 }
 
-// Show iOS instructions banner if on iOS Safari, not already installed, not dismissed
+// Show iOS instructions banner if on iOS Safari, not already installed
 function checkIOSBanner() {
-  if (isIOS && !isInStandaloneMode && !localStorage.getItem('ios-banner-dismissed')) {
+  if (isIOS && !isInStandaloneMode) {
     const isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
     const banner = document.getElementById('ios-banner');
     if (!banner) return;
     if (isSafari) {
-      // Full Safari — show "how to install" instructions after 3s
       setTimeout(() => banner.classList.remove('hidden'), 3000);
     } else {
-      // In-app browser (Google app, Chrome in-app) — tell them to open in Safari
       banner.querySelector('p').innerHTML =
         'Tap <strong>⋯</strong> or <strong>Share</strong> → <strong>"Open in Safari"</strong>, then use Safari\'s Share button → <strong>"Add to Home Screen"</strong>';
       setTimeout(() => banner.classList.remove('hidden'), 3000);
@@ -619,21 +616,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const { outcome } = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
       document.getElementById('pwa-banner').classList.add('hidden');
-      if (outcome === 'accepted') localStorage.setItem('pwa-dismissed', '1');
     });
   }
 
   if (dismissBtn) {
     dismissBtn.addEventListener('click', () => {
       document.getElementById('pwa-banner').classList.add('hidden');
-      localStorage.setItem('pwa-dismissed', '1');
     });
   }
 
   if (iosDismiss) {
     iosDismiss.addEventListener('click', () => {
       document.getElementById('ios-banner').classList.add('hidden');
-      localStorage.setItem('ios-banner-dismissed', '1');
     });
   }
 
