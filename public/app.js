@@ -18,12 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ── 1. EXTRACT QR SLUG AND RESOLVE STORE ─────────────────────────────────────
 function initializeStoreContext() {
-  const urlParams = new URLSearchParams(window.location.search);
-  let storeSlug = urlParams.get('store');
+  // Support both URL formats:
+  //   /store/omkarmal        ← new clean path (Safari saves this correctly)
+  //   /?store=omkarmal       ← old query param (kept for backward compat)
+  const pathMatch = window.location.pathname.match(/^\/store\/([^/]+)/);
+  let storeSlug = pathMatch
+    ? decodeURIComponent(pathMatch[1])
+    : new URLSearchParams(window.location.search).get('store');
 
   // If no slug in URL, fall back to the one saved when the user last scanned
   if (!storeSlug) {
     storeSlug = localStorage.getItem('grocsto-last-store');
+    if (storeSlug) {
+      // Redirect to clean path so the address bar shows the right URL
+      history.replaceState(null, '', `/store/${storeSlug}`);
+    }
   }
 
   if (!storeSlug) {
@@ -32,13 +41,12 @@ function initializeStoreContext() {
     return;
   }
 
-  // Persist the slug so home-screen shortcut always reopens the right store
+  // Persist the slug
   localStorage.setItem('grocsto-last-store', storeSlug);
 
-  // Keep the URL clean and correct (matters when launched from home screen)
-  const correctUrl = `${window.location.pathname}?store=${storeSlug}`;
-  if (window.location.search !== `?store=${storeSlug}`) {
-    history.replaceState(null, '', correctUrl);
+  // If loaded via old ?store= query param, redirect to clean path
+  if (!pathMatch) {
+    history.replaceState(null, '', `/store/${storeSlug}`);
   }
 
   fetch(`${API_BASE}/stores/scan/${storeSlug}`)
@@ -56,9 +64,9 @@ function initializeStoreContext() {
         document.getElementById("my-orders-btn").classList.remove("hidden");
         fetchStoreProducts(currentStoreId);
 
-        // Update the manifest start_url dynamically so "Add to Home Screen"
-        // saves the store-specific URL, not just "/"
+        // Update manifest start_url and canonical to the clean path URL
         updateManifestStartUrl(storeSlug);
+        setCanonicalUrl(`${window.location.origin}/store/${storeSlug}`);
       }
     })
     .catch(err => {
@@ -553,6 +561,18 @@ function updateManifestStartUrl(storeSlug) {
   if (!manifestEl) return;
   // Point to a server route that returns the manifest with the correct start_url
   manifestEl.href = `/api/stores/manifest?store=${encodeURIComponent(storeSlug)}`;
+}
+
+// Set/update the canonical URL so iOS Safari picks up the right URL
+// when the user taps Share → Add to Home Screen.
+function setCanonicalUrl(url) {
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.rel = 'canonical';
+    document.head.appendChild(canonical);
+  }
+  canonical.href = url;
 }
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);

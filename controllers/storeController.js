@@ -121,7 +121,7 @@ exports.getStoreQR = async (req, res) => {
       return res.status(404).json({ success: false, message: "Store not found." });
     }
 
-    const frontendUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`}/?store=${store.slug}`;
+    const frontendUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`}/store/${store.slug}`;
 
     const qrCodeImageUrl = await QRCode.toDataURL(frontendUrl, {
       errorCorrectionLevel: 'H',
@@ -154,7 +154,7 @@ exports.getStoreManifest = (req, res) => {
     name: "GrocSto",
     short_name: "GrocSto",
     description: "Order groceries from your local store",
-    start_url: store ? `/?store=${encodeURIComponent(store)}` : "/",
+    start_url: store ? `/store/${encodeURIComponent(store)}` : "/",
     scope: "/",
     display: "standalone",
     background_color: "#ffffff",

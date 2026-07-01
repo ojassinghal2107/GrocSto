@@ -18,6 +18,13 @@ app.use('/api/stores', require('./routes/storeRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 
+// Clean store URLs: /store/:slug → serve index.html
+// Safari saves the full path when adding to home screen, so /store/omkarmal
+// survives as a shortcut whereas /?store=omkarmal gets stripped to /
+app.get('/store/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Basic health check route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
