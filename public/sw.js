@@ -1,11 +1,11 @@
 // GrocSto Service Worker
-const CACHE_NAME = 'grocsto-v2';
+const CACHE_NAME = 'grocsto-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/style.css',
   '/app.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
 // Install: cache static assets
