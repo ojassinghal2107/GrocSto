@@ -179,6 +179,8 @@ exports.getStoreManifest = (req, res) => {
   res.setHeader('Content-Type', 'application/manifest+json');
   return res.json(manifest);
 };
+
+// 5. SET / RESET PASSWORD FOR AN EXISTING STORE (Postman use)
 exports.setStorePassword = async (req, res) => {
   const { slug, password } = req.body;
 

@@ -625,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
     installBtn.addEventListener('click', async () => {
       if (!deferredInstallPrompt) return;
       deferredInstallPrompt.prompt();
-      const { outcome } = await deferredInstallPrompt.userChoice;
+      await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
       document.getElementById('pwa-banner').classList.add('hidden');
     });
